@@ -1,0 +1,21 @@
+{
+  "name": "nenet-js",
+  "version": "1.0.0",
+  "description": "neural network library for js",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "neural",
+    "network",
+    "js"
+  ],
+  "author": "evren yortucboylu",
+  "license": "ISC",
+  "dependencies": {
+    "mnist": "^1.0.5",
+    "synaptic": "^1.0.10",
+    "vectorious": "^4.8.1"
+  }
+}

@@ -22,7 +22,7 @@ const nn = new Nenet([
 console.log(nn.y_pred);
 ```
 
-## Examples
+## Examples
 
 Please check the `examples` folder
 

@@ -1,4 +1,5 @@
 var v = require('vectorious'), Matrix = v.Matrix, Vector = v.Vector, BLAS = v.BLAS; // access BLAS routines
+const utils = require('./util');
 
 const sigmoid = (z)=> 1.0 / (1.0 + Math.exp(-z));		// sgm(z) = 1 / (1 + exp(-z))
 const sigmoid_grad = (a)=> a.product( a.map(c=> 1-c) );	// d(sgm)/da = a * (1-a)
@@ -15,6 +16,9 @@ const cross_entrophy = function(target, output) {
 	return crossentropy;
 }
 function shuffle_arrays(x, y){
+	x = utils.mat_traspose(x);
+	y = utils.mat_traspose(y);
+
 	var currentIndex = x.length, tmp1, tmp2, randomIndex;
 
 	// While there remain elements to shuffle...
@@ -31,7 +35,7 @@ function shuffle_arrays(x, y){
 		x[randomIndex] = tmp1;
 		y[randomIndex] = tmp2;
 	}	
-	return {x, y};
+	return {x: utils.mat_traspose(x), y: utils.mat_traspose(y)};
 }
 
 // add given column-matrix to every element of a row in given matrix
@@ -52,7 +56,7 @@ function addToRows(matrix, b) {
 }
 
 // inp [1;2;3;4] colSize:3 -> [1,1,1;2,2,2;3,3,3]
-function fillRows(colMatrix, colSize) {
+function resizeColMatrix(colMatrix, colSize) {
 	const rows = colMatrix.shape[0];
 	const arr = colMatrix.toArray();
 	const ret = [];
@@ -68,17 +72,43 @@ function fillRows(colMatrix, colSize) {
 	return new Matrix(ret);
 }
 
+function getMiniBatch(dataSet, batchSize){
+	const dataSize = dataSet.x[0].length;
+	var x = [];
+	var y =[];
+
+	const refX = utils.mat_transpose(dataSet.x);
+	const refY = utils.mat_transpose(dataSet.y);
+
+	for(var i=0; i<batchSize; i++){
+		const index = Math.floor(Math.random() * dataSize);
+
+		const x_row = refX[index];
+		const y_row = refY[index];
+
+		x.push(x_row);
+		y.push(y_row);
+	}
+
+	x = utils.mat_transpose(x);
+	y = utils.mat_transpose(y);
+
+
+	return {x,y};
+}
+
 class Layer {
 	constructor(size) {
 		this.size = size;
 		this.type = null;
 		this.z = new Matrix.zeros(size[0], 1);
 		this.a = new Matrix(size[0], 1);
+		this.b = null;
 	}
 
 	__initWeights(data_size) {
 		const bCol = new Matrix.random(this.size[0], 1, 0, -0.5);
-		this.b = fillRows(bCol, data_size);
+		this.b = resizeColMatrix(bCol, data_size);
 
 		this.w = new Matrix.random(...this.size, 0, -0.5);
 		this.del = null;
@@ -86,17 +116,19 @@ class Layer {
 		return this;
 	}
 
-	log() { console.log({z: this.z.toArray(), a: this.a.toArray() }); }
+	log() { console.log({z: this.z.toArray(), a: this.a.toArray(), b: this.b ? this.b.toArray() : "" }); }
 }
 
 class Nenet {
 	constructor(opt) {
-		this.x = null;			// input matrix
-		this.y = null;			// output matrix
-		this.y_pred = null;		// estimation
-		this.layers = [];		// layers array
-		this.err = null;		// system error
-		this.e = 0.05;			// learning rate
+		this.dataSet = {x: null, y: null}	// training data-set
+		this.x = null;						// input data
+		this.y = null;						// output
+		this.y_pred = null;					// estimation
+		this.layers = [];					// layers array
+		this.err = null;					// system error
+		this.e = 0.05;						// learning rate
+		this.miniBatchSize = 5;			
 
 		this.errorFunction = Nenet.funcs.quadric;
 		this.onIterationStep = 10;
@@ -106,6 +138,8 @@ class Nenet {
 	}
 
 	options(opt) {
+		this.dataSet = opt.dataSet;
+		this.miniBatchSize = opt.miniBatchSize || this.miniBatchSize;
 		this.errorFunction = opt.errorFunction || this.errorFunction;
 		this.e = opt.learningRate || this.e;
 		this.onIterationStep = opt.onIterationStep || this.onIterationStep;
@@ -125,11 +159,11 @@ class Nenet {
 
 			switch(cur_layer[0]	/*layer type*/) {
 				case "input":
-					this.x = new Matrix(cur_layer[1]);
-					size = [cur_layer[1].length];
-					this.xSize = this.x.shape[1];
+					// this.x = new Matrix(cur_layer[1]);
+					size = [cur_layer[1] /*.length*/ ];
+					this.xSize = 1; //this.x.shape[1];
 					lyr = new Layer(size);
-					lyr.a = this.x;
+					// lyr.a = this.x;
 					break;
 
 				case "hidden":
@@ -138,8 +172,8 @@ class Nenet {
 					break;
 
 				case "output":
-					this.y = new Matrix(cur_layer[1]);
-					size = [cur_layer[1].length, prev_layer.size[0]];
+					// this.y = new Matrix(cur_layer[1]);
+					size = [cur_layer[1] /*.length*/, prev_layer.size[0]];
 					lyr = new Layer(size).__initWeights(this.xSize);
 					break;
 			}
@@ -152,13 +186,31 @@ class Nenet {
 
 	train(max_iter) {
 		for(var i=0; i<max_iter; i++){
-			this.iterate_training(i, max_iter);
+			// get mini-batch
+			const {x,y} = getMiniBatch(this.dataSet, this.miniBatchSize);
+
+			this.iterate_training(x, y, i, max_iter);
 		}
 
 		return this;
 	}
 
-	iterate_training(step, max) {
+	initPreActivation(x, y) {
+		// re-init with data
+		this.layers[0].a = new Matrix(x);
+		this.layers.map((lyr,i) => {
+			if(i>0) {
+				lyr.b = resizeColMatrix(lyr.b, x[0].length);
+			}
+		});
+	}
+
+	iterate_training(x, y, step, max) {
+
+		this.initPreActivation(x, y);
+		this.y = new Matrix(y);
+
+		// feed forward
 		this.feedForwardNetwork();
 
 		// system error
@@ -221,7 +273,7 @@ class Nenet {
 	}
 
 	activation(xInput) {
-		this.layers[0].a = new Matrix(xInput);
+		this.initPreActivation(xInput);
 		this.feedForwardNetwork();
 		return this.layers[this.layers.length-1].a.toArray();
 	}

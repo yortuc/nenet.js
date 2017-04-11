@@ -37,21 +37,22 @@ function parse_data(data){
 
 const data = parse_data(mnist_data_raw);
 
-// utils.write_file(data.x, "x_.txt");
-// utils.write_file(data.y, "y_.txt");
-
 const nn = new Nenet([
-		["input", data.x],	// 784 features (pixel values)
+		["input", 784],	// 784 features (pixel values)
 		["hidden", 15],		// 15 
-		["output", data.y]	// 10 classes
+		["output", 10]	// 10 classes
 	])
 	.options({ 
+		dataSet: data,
+		miniBatchSize: 10,
 		errorFunction: Nenet.funcs.cross_entrophy,
-		learningRate: 0.05,
+		learningRate: 0.2,
 		onIterationStep: 5
 	})
-	.train(100000);
+	.train(5000);
 
+const y_pred = nn.activation(data.x);
+utils.write_file(y_pred, "y_pred.txt");
 
-var correct_estimates = utils.classification_error(nn.y_pred, data.y);
+var correct_estimates = utils.classification_error(y_pred, data.y);
 console.log("training accuracy: %", 100 * correct_estimates / data.x[0].length);

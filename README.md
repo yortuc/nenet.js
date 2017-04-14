@@ -11,12 +11,15 @@ const y = [[0.25, 0.5, 0.7],
            [0.5, 0.7, 0.9]];
 
 const nn = new Nenet([
-		["input", x],
+		["input", 3],
 		["hidden", 6],
 		["hidden", 6],
 		["hidden", 6],
-		["output", y]
+		["output", 3]
 	])
+	.options({
+		dataSet: {x,y}
+	})
 	.train(100);
 
 console.log(nn.y_pred);
@@ -36,11 +39,12 @@ Please check the `examples` folder
 
 ## Roadmap
 
-Seperate neural network and trainer
+Seperate neural network and trainer -
 
-Implement online and mini-batch training 
+Implement online and mini-batch training +
 
-Ipmlement momentum
+Ipmlement momentum -
+
 
 Lab
 - Web app (redux, react, d3, nenet)

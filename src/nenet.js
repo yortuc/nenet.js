@@ -93,7 +93,6 @@ function getMiniBatch(dataSet, batchSize){
 	x = utils.mat_transpose(x);
 	y = utils.mat_transpose(y);
 
-
 	return {x,y};
 }
 
@@ -116,7 +115,7 @@ class Layer {
 		return this;
 	}
 
-	log() { console.log({z: this.z.toArray(), a: this.a.toArray(), b: this.b ? this.b.toArray() : "" }); }
+	log() { console.log({a: this.a.toArray(), b: this.b ? this.b.toArray() : "" }); }
 }
 
 class Nenet {
@@ -129,6 +128,7 @@ class Nenet {
 		this.err = null;					// system error
 		this.e = 0.05;						// learning rate
 		this.miniBatchSize = 5;			
+		this.dataDivision = [1, 0, 0];		// all data is training-data
 
 		this.errorFunction = Nenet.funcs.quadric;
 		this.onIterationStep = 10;

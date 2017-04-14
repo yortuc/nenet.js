@@ -1,9 +1,9 @@
 const Nenet = require('../../src/nenet'),
 	  utils = require('../../src/util'); 
 
-const mnist_data_raw = utils.read_file("./mnist_min.txt");
+const mnist_data_raw = utils.read_file("./mnist_test.txt");
 
-function parse_data(data){
+function parse_mnist_data(data){
 	var x = [];
 	var y = [];
 	var data_col_size = 0;
@@ -35,11 +35,11 @@ function parse_data(data){
 	return {x, y: y_hot};
 }
 
-const data = parse_data(mnist_data_raw);
+const data = parse_mnist_data(mnist_data_raw);
 
 const nn = new Nenet([
 		["input", 784],	// 784 features (pixel values)
-		["hidden", 15],		// 15 
+		["hidden", 15],	// 15 hidden layer neurons
 		["output", 10]	// 10 classes
 	])
 	.options({ 
@@ -56,3 +56,21 @@ utils.write_file(y_pred, "y_pred.txt");
 
 var correct_estimates = utils.classification_error(y_pred, data.y);
 console.log("training accuracy: %", 100 * correct_estimates / data.x[0].length);
+
+// validation
+const validation_data = parse_mnist_data(utils.read_file('./mnist_validation.txt'));
+const validation_estimate = nn.activation(validation_data.x);
+const validation_accuracy = utils.classification_error(validation_estimate, validation_data.y) * 100.0 / validation_data.x[0].length;
+
+console.log("validation accuracy: %", validation_accuracy);
+
+// log trained weights
+/*console.log("Weights:\n");
+for(var i=0; i<nn.layers.length; i++){
+	console.log("Layer " + i + ":");
+	nn.layers[i].log();
+}
+
+*/
+
+

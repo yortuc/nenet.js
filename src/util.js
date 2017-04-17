@@ -1,7 +1,7 @@
 /*
  * Utility functions 
  */
-
+var v = require('vectorious'), Matrix = v.Matrix, Vector = v.Vector, BLAS = v.BLAS; // access BLAS routines
 var fs = require('fs');
 
 function read_file(filename) {
@@ -99,11 +99,45 @@ function write_file(matrix, filename){
 	fs.writeFileSync(filename, str);
 }
 
+function log_file(txt, filename){
+	fs.writeFileSync(filename, txt);
+}
+
+// inp [1;2;3;4] colSize:3 -> [1,1,1;2,2,2;3,3,3]
+function resize_col_matrix(colMatrix, colSize) {
+	const rows = colMatrix.shape[0];
+	const arr = colMatrix.toArray();
+	const ret = [];
+
+	for(var i=0; i<rows; i++){
+		ret.push([]);
+		const rowVal = arr[i][0];
+		for(var j=0; j<colSize; j++){
+			ret[i].push(rowVal);
+		}
+	}
+
+	return new Matrix(ret);
+}
+
+function serialize_nn_weights(nn) {
+	var log = {};
+	for(var i=0; i<nn.layers.length; i++){
+		log["Layer" + i] = {};
+		if(nn.layers[i].b) log["Layer" + i]["b"] = resize_col_matrix(nn.layers[i].b, 1).toArray();
+		if(nn.layers[i].w) log["Layer" + i]["w"] = nn.layers[i].w.toArray();
+	}
+	return log;
+}
+
 module.exports = {
 	read_file, 
 	parse_data, 
 	shuffle_arrays, 
 	classification_error, 
 	mat_transpose, 
-	write_file
+	write_file,
+	resize_col_matrix,
+	log_file,
+	serialize_nn_weights
 };

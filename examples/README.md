@@ -1,15 +1,38 @@
 # Examples
 
-## 1. Iris classification 
+## 1. Iris Classification 
+normalized iris data used.
 
-150 data points divided 0.8~0.2 into training and validation sets respectively. 
-4-6-3 neural network trained with mini-batch size 25 and learning rate 0.2.
-neural network reached %93.33 validation accuracy.
+training data set: 120 samples 
+test data set: 30 samples  
+ 
+mini-batch size: 25
+learning rate: 0.2
+epochs: 5000
 
-## 2. Mnist
+training   accuracy: % 97.5
 
-mnist_visualizer : draw a number with your hand and get the estimation of system.
+validation accuracy: % 93.3
 
-yortuc.github.io/digit
+![training error](iris/scr_error.png)
+
+## 2. Mnist Classification
+pixel density value inputs (0~255) are normalized by dividing each sample with 255.
+
+training data set : 10000 samples
+test data set : 2500 samples
+
+mini-batch size: 20
+learning rate: 0.2
+epochs : 5000
+
+training	accuracy:	% 93.55
+
+validation	accuracy:	% 88
+
+![training error](mnist/scr_error.png)
 
 (Mnist dataset in csv format from https://pjreddie.com/projects/mnist-in-csv/)
+
+## Boston house price prediction
+

@@ -1,6 +1,8 @@
 var v = require('vectorious'), Matrix = v.Matrix, Vector = v.Vector, BLAS = v.BLAS; // access BLAS routines
 const utils = require('./util');
 
+const linear_activation = (z)=> z;
+const linear_activation_grad = (z)=>1;
 const sigmoid = (z)=> 1.0 / (1.0 + Math.exp(-z));		// sgm(z) = 1 / (1 + exp(-z))
 const sigmoid_grad = (a)=> a.product( a.map(c=> 1-c) );	// d(sgm)/da = a * (1-a)
 const quadratic = (y, a) => {
@@ -55,30 +57,16 @@ function addToRows(matrix, b) {
 	return new Matrix(matrixSubset);
 }
 
-// inp [1;2;3;4] colSize:3 -> [1,1,1;2,2,2;3,3,3]
-function resizeColMatrix(colMatrix, colSize) {
-	const rows = colMatrix.shape[0];
-	const arr = colMatrix.toArray();
-	const ret = [];
-
-	for(var i=0; i<rows; i++){
-		ret.push([]);
-		const rowVal = arr[i][0];
-		for(var j=0; j<colSize; j++){
-			ret[i].push(rowVal);
-		}
-	}
-
-	return new Matrix(ret);
-}
+var refX = null;
+var refY = null;
 
 function getMiniBatch(dataSet, batchSize){
 	const dataSize = dataSet.x[0].length;
 	var x = [];
 	var y =[];
 
-	const refX = utils.mat_transpose(dataSet.x);
-	const refY = utils.mat_transpose(dataSet.y);
+	refX = refX || utils.mat_transpose(dataSet.x);
+	refY = refY || utils.mat_transpose(dataSet.y);
 
 	for(var i=0; i<batchSize; i++){
 		const index = Math.floor(Math.random() * dataSize);
@@ -107,7 +95,7 @@ class Layer {
 
 	__initWeights(data_size) {
 		const bCol = new Matrix.random(this.size[0], 1, 0, -0.5);
-		this.b = resizeColMatrix(bCol, data_size);
+		this.b = utils.resize_col_matrix(bCol, data_size);
 
 		this.w = new Matrix.random(...this.size, 0, -0.5);
 		this.del = null;
@@ -200,7 +188,7 @@ class Nenet {
 		this.layers[0].a = new Matrix(x);
 		this.layers.map((lyr,i) => {
 			if(i>0) {
-				lyr.b = resizeColMatrix(lyr.b, x[0].length);
+				lyr.b = utils.resize_col_matrix(lyr.b, x[0].length);
 			}
 		});
 	}

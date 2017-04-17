@@ -1,0 +1,91 @@
+ <html>
+ <head>
+ 	<title>mnist draw</title>
+ 	<style>canvas{border: 1px solid #ddd;}</style>
+ </head>
+<body onload="init()">
+	
+
+    <canvas id="can" width="560" height="560"></canvas>
+    <div>
+    	<button onclick="reset">Reset</button>
+    	<button id="btnResult" onclick="getResult">Result</button>
+    </div>
+
+    <script type="text/javascript">
+	    var canvas, ctx, w, h, drawing,
+	    	x1, y1, x2, y2, size = 20;
+	    
+		var el = document.getElementById('can');
+		var ctx = el.getContext('2d');
+		var isDrawing;
+		var size = 20;
+		w = el.width;
+		h = el.height;
+
+		el.onmousedown = function(e) {
+			isDrawing = true;
+			ctx.strokeStyle = "black"
+			ctx.lineWidth = 30;
+			ctx.lineJoin = ctx.lineCap = "round";
+			ctx.shadowBlur = 5;
+			ctx.shadowColor = "black";
+
+			ctx.beginPath();
+			ctx.moveTo(e.clientX, e.clientY);
+		};
+		el.onmousemove = function(e) {
+		  if (isDrawing) {                              
+		    ctx.lineTo(e.clientX, e.clientY);
+		    ctx.stroke();
+		  }
+		};
+		el.onmouseup = function() {
+		  isDrawing = false;
+		};
+
+		document.getElementById("btnResult").onclick = get_result;
+
+		function init() {
+	    	ctx.fillStyle = "white";
+	    	ctx.fillRect(0,0,w,h);
+
+	    	for(var i=1; i<28; i++){
+	    		line(0, i*size-0.5, w, i*size-0.5);
+	    	}
+	    	for(var i=1; i<28; i++){
+	    		line(i*size-0.5, 0, i*size-0.5, h);
+	    	}
+	    	line(0, 14*size-0.5, w, 14*size-0.5, "blue");
+	    	line(14*size-0.5, 0, 14*size-0.5, h, "blue");
+	    }
+	    
+	    function line(x1, y1, x2, y2, color) {
+	       	ctx.beginPath();
+	       	ctx.lineWidth=1;
+	       	ctx.strokeStyle = color || "rgb(200,200,200)";
+			ctx.moveTo(x1,y1);
+			ctx.lineTo(x2,y2);
+			ctx.stroke();
+	    }
+
+	    function get_result() {
+	    	var matrix = [];
+			var imgd = ctx.getImageData(0, 0, w, h);
+			var pix = imgd.data;
+			console.log(pix.length);
+			var ind = 0;
+
+	    	for(var i=0; i<28; i++){
+	        	matrix.push([]);
+	        	for(var j=0; j<28; j++){
+	        		matrix[i].push((pix[ind] + pix[ind+1] + pix[ind+2])/3.0);
+	        		console.log(ind);
+	        		ind += 4;
+	        	}
+	        }
+	        console.table(imgd);
+	    }
+    </script>
+</body>
+</html>

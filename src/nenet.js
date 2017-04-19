@@ -2,9 +2,14 @@ var v = require('vectorious'), Matrix = v.Matrix, Vector = v.Vector, BLAS = v.BL
 const utils = require('./util');
 
 const linear_activation = (z)=> z;
-const linear_activation_grad = (z)=>1;
+const linear_activation_grad = (z)=> z.map(c=> 1);
+
 const sigmoid = (z)=> 1.0 / (1.0 + Math.exp(-z));		// sgm(z) = 1 / (1 + exp(-z))
-const sigmoid_grad = (a)=> a.product( a.map(c=> 1-c) );	// d(sgm)/da = a * (1-a)
+const sigmoid_grad = (z)=> {
+	const sgm = z.map(sigmoid);
+	return Matrix.product(sgm, sgm.map(c=> 1-c));
+}
+
 const quadratic = (y, a) => {
 	const sb = Matrix.subtract(y, a);
 	const sb2 = sb.product(sb);
@@ -85,9 +90,11 @@ function getMiniBatch(dataSet, batchSize){
 }
 
 class Layer {
-	constructor(size) {
+	constructor(size, activation_func, activation_func_grad) {
 		this.size = size;
 		this.type = null;
+		this.activation_func = activation_func;
+		this.activation_func_grad = activation_func_grad;
 		this.z = new Matrix.zeros(size[0], 1);
 		this.a = new Matrix(size[0], 1);
 		this.b = null;
@@ -141,6 +148,8 @@ class Nenet {
 		for(var i=0; i<opt.length; i++){
 			let cur_layer = opt[i];
 			let prev_layer = i > 0 ? this.layers[i-1] : null;
+			let activation_func = opt[i][2] || sigmoid;
+			let activation_func_grad = opt[i][3] || sigmoid_grad;
 			let size;
 			let lyr;
 			let xSize;
@@ -150,19 +159,19 @@ class Nenet {
 					// this.x = new Matrix(cur_layer[1]);
 					size = [cur_layer[1] /*.length*/ ];
 					this.xSize = 1; //this.x.shape[1];
-					lyr = new Layer(size);
+					lyr = new Layer(size, activation_func, activation_func_grad);
 					// lyr.a = this.x;
 					break;
 
 				case "hidden":
 					size = [cur_layer[1], prev_layer.size[0]];
-					lyr = new Layer(size).__initWeights(this.xSize);
+					lyr = new Layer(size, activation_func, activation_func_grad).__initWeights(this.xSize);
 					break;
 
 				case "output":
 					// this.y = new Matrix(cur_layer[1]);
 					size = [cur_layer[1] /*.length*/, prev_layer.size[0]];
-					lyr = new Layer(size).__initWeights(this.xSize);
+					lyr = new Layer(size, activation_func, activation_func_grad).__initWeights(this.xSize);
 					break;
 			}
 			lyr.type = cur_layer[0];
@@ -231,7 +240,7 @@ class Nenet {
 
 		layer.z = Matrix.multiply(layer.w, prev_layer.a);		
 		layer.z = Matrix.add(layer.z, layer.b);
-		layer.a = layer.z.map(sigmoid);
+		layer.a = layer.z.map(layer.activation_func);
 	}
 
 	backPropLayer(layer_index) {
@@ -242,14 +251,14 @@ class Nenet {
 			// non-output layer
 			const next_layer = this.layers[layer_index+1];
 			const bprop = Matrix.multiply(next_layer.w.T, next_layer.del);
-			const net_grad = sigmoid_grad(layer.a);
+			const net_grad = layer.activation_func_grad(layer.z);
 			layer.del = Matrix.product(bprop, net_grad);
 			layer.w_grad = Matrix.multiply(layer.del, prev_layer.a.T);
 		}
 		else{
 			// output layer
 			const output_err = Matrix.subtract(layer.a, this.y);
-			const net_grad = sigmoid_grad(layer.a);
+			const net_grad = layer.activation_func_grad(layer.z);	// da/dz
 
 			layer.del = Matrix.product(output_err, net_grad);
 			layer.w_grad = Matrix.multiply(layer.del, prev_layer.a.T);
@@ -275,6 +284,8 @@ class Nenet {
 Nenet.funcs = {
 	sigmoid,
 	sigmoid_grad,
+	linear_activation,
+	linear_activation_grad,
 	quadratic,
 	cross_entrophy
 };
